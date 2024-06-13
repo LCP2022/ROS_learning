@@ -13,5 +13,5 @@
 - [x] Live Video
 - [x] Take images
 - [x] (optional test) publish send to video live feed to subscribe to view)
-- [ ] video on publish,picture on sub
+- [x] video on publish,picture on sub
 - [ ] calibration K P D
