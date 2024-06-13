@@ -10,6 +10,8 @@
 - [x] config file and launch file
 ### Task 2
 - [x] OpenCV camera view
+- [x] Live Video
+- [x] Take images
 - [x] (optional test) publish send to video live feed to subscribe to view)
 - [ ] video on publish,picture on sub
 - [ ] calibration K P D
