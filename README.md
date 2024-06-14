@@ -14,4 +14,8 @@
 - [x] Take images
 - [x] (optional test) publish send to video live feed to subscribe to view)
 - [x] video on publish,picture on sub
-- [ ] calibration K P D
+- [ ] Load All Image
+- [ ] calibration and get intrinsics
+- [ ] calibration and get extrinsics
+- [ ] save it to a XML file for all the calculation
+
