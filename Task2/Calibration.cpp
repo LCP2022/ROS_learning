@@ -24,12 +24,18 @@ class Calibration
         double rms ;//overall RMS re-projection error
     public:
         Calibration(std::string imgpath,int CBWidth,int CBHeight);
-        void PrintImage_WH();
         void RunCalibration();
         void FindDrawChessboardCorners(cv::Mat imgframe);
         cv::Mat RealRotation(cv::Mat R);
         void PrintIntrinsicParam();
         void PrintExtrinsicParam();
+        void PrintImage_WH();
+        cv::Mat getCameraMatrix();
+        cv::Mat getDistCoeffs();
+        cv::Mat getRotation();
+        cv::Mat getTranslation();
+
+
 };
 Calibration::Calibration(std::string filepathname,int CBWidth,int CBHeight)
 {
@@ -37,11 +43,6 @@ Calibration::Calibration(std::string filepathname,int CBWidth,int CBHeight)
     Chessboard_Width = CBWidth;
     Image_Path_Name = filepathname;
 }
-void Calibration::PrintImage_WH(){
-    std::cout<<"Width :"    <<  Framesize.width;
-    std::cout<<" Height :"  <<  Framesize.height << std::endl;
-}
-
 void Calibration::RunCalibration(){
     
     cv::Mat imgframe = cv::imread(Image_Path_Name,cv::IMREAD_COLOR); 
@@ -94,4 +95,20 @@ void Calibration::PrintExtrinsicParam(){
     std::cout<<"extrinsic camera Parameter"<<std::endl; // 9x9 matrix
     std::cout<<"Translation : "<<Translation<<std::endl;
     std::cout<<"[3x3] Rotation : "<<RealRotation(Rotation)<<std::endl; //3x3
+}
+void Calibration::PrintImage_WH(){
+    std::cout<<"Width :"    <<  Framesize.width;
+    std::cout<<" Height :"  <<  Framesize.height << std::endl;
+}
+cv::Mat Calibration::getCameraMatrix(){
+    return cameraMatrix;
+}
+cv::Mat Calibration::getDistCoeffs(){
+    return distCoeffs;
+}
+cv::Mat Calibration::getRotation(){
+    return Rotation;
+}
+cv::Mat Calibration::getTranslation(){
+    return Translation;
 }
