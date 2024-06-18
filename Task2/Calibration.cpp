@@ -34,8 +34,7 @@ class Calibration
         cv::Mat getDistCoeffs();
         cv::Mat getRotation();
         cv::Mat getTranslation();
-
-
+        cv::Size getFramesize();
 };
 Calibration::Calibration(std::string filepathname,int CBWidth,int CBHeight)
 {
@@ -83,7 +82,7 @@ void Calibration::PrintIntrinsicParam(){
     std::cout<<"Focal x : "<<cameraMatrix.at<double>(0,0)<<std::endl;
     std::cout<<"Focal y : "<<cameraMatrix.at<double>(1,1)<<std::endl;
     std::cout<<"px|cx : "<< cameraMatrix.at<double>(0,2)<<std::endl;
-    std::cout<<"px|cx : "<< cameraMatrix.at<double>(1,2)<<std::endl;
+    std::cout<<"py|cy : "<< cameraMatrix.at<double>(1,2)<<std::endl;
     std::cout<<"distortion"<<std::endl; // 9x9 matrix
     std::cout<< "k1 : " << distCoeffs.at<double>(0,0)<<std::endl;
     std::cout<< "k2 : " << distCoeffs.at<double>(0,1)<<std::endl;
@@ -112,3 +111,7 @@ cv::Mat Calibration::getRotation(){
 cv::Mat Calibration::getTranslation(){
     return Translation;
 }
+cv::Size Calibration::getFramesize(){
+    return Framesize;
+}
+
