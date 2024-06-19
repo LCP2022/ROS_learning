@@ -35,6 +35,8 @@ class Calibration
         cv::Mat getRotation();
         cv::Mat getTranslation();
         cv::Size getFramesize();
+        cv::Mat UndistoredImage(cv::Mat in_image);
+
 };
 Calibration::Calibration(std::string filepathname,int CBWidth,int CBHeight)
 {
@@ -113,5 +115,10 @@ cv::Mat Calibration::getTranslation(){
 }
 cv::Size Calibration::getFramesize(){
     return Framesize;
+}
+cv::Mat Calibration::UndistoredImage(cv::Mat in_image){
+    cv::Mat out_image;
+    cv::undistort(in_image,out_image,cameraMatrix,distCoeffs,cameraMatrix);
+    return out_image;
 }
 
