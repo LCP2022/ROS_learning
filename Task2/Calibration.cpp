@@ -121,7 +121,6 @@ cv::Mat Calibration::UndistoredImage(cv::Mat in_image){
     // some part of the image will be missing, this is ok, as it does not always get the full images correctly 
     cv::Mat out_image;
     cv::Mat map1,map2;
-    cv::Mat newcameraMatrix =cv::getOptimalNewCameraMatrix(cameraMatrix,distCoeffs,cv::Size(Framesize.width,Framesize.height),0,cv::Size(Framesize.width,Framesize.height),0);
     cv::undistort( in_image, out_image, cameraMatrix, distCoeffs, cameraMatrix );
     std::cout<<rms<<std::endl;
     return out_image; 
