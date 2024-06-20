@@ -117,15 +117,12 @@ cv::Size Calibration::getFramesize(){
     return Framesize;
 }
 cv::Mat Calibration::UndistoredImage(cv::Mat in_image){
-    // not working 
+    // only work on fisheye images
+    // some part of the image will be missing, this is ok, as it does not always get the full images correctly 
     cv::Mat out_image;
-    int a = 0;
-    cv::Rect *roi;
-    cv::Mat newcameraMatrix =cv::getOptimalNewCameraMatrix(cameraMatrix,distCoeffs,Framesize,a,Framesize,roi);
-    cv::undistort(in_image,out_image,cameraMatrix,distCoeffs,newcameraMatrix);
-    //cv::Mat mapx,mapy;
-    //cv::initUndistortRectifyMap(cameraMatrix,distCoeffs,cv::Mat(),newcameraMatrix,Framesize,CV_16SC2,mapx,mapy);
-    //cv::remap(in_image,out_image,mapx,mapy,cv::INTER_LINEAR);
+    cv::Mat map1,map2;
+    cv::Mat newcameraMatrix =cv::getOptimalNewCameraMatrix(cameraMatrix,distCoeffs,cv::Size(Framesize.width,Framesize.height),0,cv::Size(Framesize.width,Framesize.height),0);
+    cv::undistort( in_image, out_image, cameraMatrix, distCoeffs, cameraMatrix );
+    std::cout<<rms<<std::endl;
     return out_image; 
 }
-
