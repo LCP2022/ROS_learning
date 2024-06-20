@@ -117,8 +117,15 @@ cv::Size Calibration::getFramesize(){
     return Framesize;
 }
 cv::Mat Calibration::UndistoredImage(cv::Mat in_image){
+    // not working 
     cv::Mat out_image;
-    cv::undistort(in_image,out_image,cameraMatrix,distCoeffs,cameraMatrix);
-    return out_image;
+    int a = 0;
+    cv::Rect *roi;
+    cv::Mat newcameraMatrix =cv::getOptimalNewCameraMatrix(cameraMatrix,distCoeffs,Framesize,a,Framesize,roi);
+    cv::undistort(in_image,out_image,cameraMatrix,distCoeffs,newcameraMatrix);
+    //cv::Mat mapx,mapy;
+    //cv::initUndistortRectifyMap(cameraMatrix,distCoeffs,cv::Mat(),newcameraMatrix,Framesize,CV_16SC2,mapx,mapy);
+    //cv::remap(in_image,out_image,mapx,mapy,cv::INTER_LINEAR);
+    return out_image; 
 }
 
