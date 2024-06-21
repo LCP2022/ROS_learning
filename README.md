@@ -17,5 +17,5 @@
 - [x] Load All Image
 - [x] calibration and get intrinsics
 - [x] calibration and get extrinsics
-- [ ] save it to a XML file for all the calculation
+- [x] save it to a XML file for all the calculation
 
