@@ -14,6 +14,7 @@ class Calibration
     private:
         int Chessboard_Width;
         int Chessboard_Height;
+        cv::Mat imgframe;
         cv::Size Framesize;
         std::string Image_Path_Name;
         std::vector<std::vector<cv::Point3f>> objpoints; // Store 3D points
@@ -24,7 +25,9 @@ class Calibration
         double rms ;//overall RMS re-projection error
     public:
         Calibration(std::string imgpath,int CBWidth,int CBHeight);
+        Calibration(cv::Mat frame ,int CBWidth,int CBHeight);
         void RunCalibration();
+        void RunCalibrationFrame();
         void FindDrawChessboardCorners(cv::Mat imgframe);
         cv::Mat RealRotation(cv::Mat R);
         void PrintIntrinsicParam();
@@ -36,7 +39,6 @@ class Calibration
         cv::Mat getTranslation();
         cv::Size getFramesize();
         cv::Mat UndistoredImage(cv::Mat in_image);
-
 };
 Calibration::Calibration(std::string filepathname,int CBWidth,int CBHeight)
 {
@@ -44,12 +46,23 @@ Calibration::Calibration(std::string filepathname,int CBWidth,int CBHeight)
     Chessboard_Width = CBWidth;
     Image_Path_Name = filepathname;
 }
+Calibration::Calibration(cv::Mat frame ,int CBWidth,int CBHeight)
+{
+    Chessboard_Height = CBHeight;
+    Chessboard_Width = CBWidth;
+    imgframe = frame;
+}
 void Calibration::RunCalibration(){
     
-    cv::Mat imgframe = cv::imread(Image_Path_Name,cv::IMREAD_COLOR); 
+    imgframe = cv::imread(Image_Path_Name,cv::IMREAD_COLOR); 
     Framesize = imgframe.size();
     imshow("Orignal",imgframe);
     FindDrawChessboardCorners(imgframe);
+}
+void Calibration::RunCalibrationFrame(){
+    Framesize = imgframe.size();
+    imshow("Orignal",imgframe);
+    FindDrawChessboardCorners(this->imgframe);
 }
 void Calibration::FindDrawChessboardCorners(cv::Mat imgframe){
     for(int i{0}; i<Chessboard_Height; i++)
@@ -71,8 +84,12 @@ void Calibration::FindDrawChessboardCorners(cv::Mat imgframe){
             objpoints.push_back(objp);
             imgpoints.push_back(corner_pts);
             imshow("Found ChessBoard Corner Image",imgframe);
+            rms=calibrateCamera(objpoints, imgpoints, cv::Size(gray.rows,gray.cols), cameraMatrix, distCoeffs, Rotation, Translation);
+            PrintIntrinsicParam();
+            PrintExtrinsicParam();
+            cv::Mat undistimg = UndistoredImage(imgframe);
+            imshow("undistoredimage",undistimg);
         }
-    rms=calibrateCamera(objpoints, imgpoints, cv::Size(gray.rows,gray.cols), cameraMatrix, distCoeffs, Rotation, Translation);
 }
 cv::Mat Calibration::RealRotation(cv::Mat R){
     cv::Mat realR;
@@ -101,6 +118,15 @@ void Calibration::PrintImage_WH(){
     std::cout<<"Width :"    <<  Framesize.width;
     std::cout<<" Height :"  <<  Framesize.height << std::endl;
 }
+cv::Mat Calibration::UndistoredImage(cv::Mat in_image){
+    // only work on fisheye images
+    // some part of the image will be missing, this is ok, as it does not always get the full images correctly 
+    cv::Mat out_image;
+    cv::Mat map1,map2;
+    cv::undistort( in_image, out_image, cameraMatrix, distCoeffs, cameraMatrix );
+    std::cout<<rms<<std::endl;
+    return out_image; 
+}
 cv::Mat Calibration::getCameraMatrix(){
     return cameraMatrix;
 }
@@ -116,12 +142,4 @@ cv::Mat Calibration::getTranslation(){
 cv::Size Calibration::getFramesize(){
     return Framesize;
 }
-cv::Mat Calibration::UndistoredImage(cv::Mat in_image){
-    // only work on fisheye images
-    // some part of the image will be missing, this is ok, as it does not always get the full images correctly 
-    cv::Mat out_image;
-    cv::Mat map1,map2;
-    cv::undistort( in_image, out_image, cameraMatrix, distCoeffs, cameraMatrix );
-    std::cout<<rms<<std::endl;
-    return out_image; 
-}
+
