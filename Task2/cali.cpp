@@ -12,16 +12,9 @@ using namespace std;
 #define W_CHECKBOX 6
 #define H_CHECKBOX 8
 
-
-bool LoadFile(string filepath_name, vector<string> &listvar){
-    FileStorage fs;
-    fs.open(filepath_name, FileStorage::READ);
-    if (!fs.isOpened()){
-        cerr << "Failed to open " << filepath_name << endl;
-        return false;
-    }
+bool getconifgseq(FileStorage fs,string name,vector<string> &listvar){
     // look for <image></images> with multi string
-    FileNode fn = fs["images"]; 
+    FileNode fn = fs[name]; 
     if (fn.type() != FileNode::SEQ){
         cerr << "strings is not a sequence! FAIL" << endl;
         return false;
@@ -30,8 +23,16 @@ bool LoadFile(string filepath_name, vector<string> &listvar){
     for (; it != it_end; ++it){
         listvar.push_back((string)*it);
     }
-    cout <<"Load to Image path : "<< listvar.size() << endl;
-    fs.release();
+}
+string getconifgsingle(FileStorage fs,string name){
+    return fs[name];
+}
+bool LoadFile(string filepath_name ,FileStorage &outfs){
+    outfs.open(filepath_name, FileStorage::READ);
+    if (!outfs.isOpened()){
+        cerr << "Failed to open " << filepath_name << endl;
+        return false;
+    }
     return true;
 }
 bool SaveFile(string filepath_name,string imgpathname,Calibration cali)
@@ -72,18 +73,46 @@ bool SaveFile(string filepath_name,string imgpathname,Calibration cali)
 int main(int argc , char** argv){
 
     vector<string> Imgpathlist;
-    LoadFile("/home/user/Desktop/CaliCam/src/piccali/config/InputSetting.xml",Imgpathlist);
-    for(int i =0; i < Imgpathlist.size();i++){
-        /*---------------Display Images------------------------*/
-        Calibration cali(Imgpathlist[i],W_CHECKBOX,H_CHECKBOX);
-        cali.RunCalibration();
-        cali.PrintIntrinsicParam();
-        cali.PrintExtrinsicParam();
-        bool status = SaveFile("/home/user/Desktop/CaliCam/src/piccali/config/Output.yaml",Imgpathlist[i],cali);
-        if (status == false){
-            return 1;
+    FileStorage fs;
+    bool status = LoadFile("/home/user/Desktop/CaliCam/src/piccali/config/InputSetting.xml",fs);
+    if(status){
+        getconifgseq(fs,"images",Imgpathlist);
+        for(int i =0; i < Imgpathlist.size();i++){
+            /*---------------Display Images------------------------*/
+            Calibration cali(Imgpathlist[i],W_CHECKBOX,H_CHECKBOX);
+            cali.RunCalibration();
+            // bool status = SaveFile("/home/user/Desktop/CaliCam/src/piccali/config/Output.yaml",Imgpathlist[i],cali);
+            // if (status == false){
+            //     return 1;
+            // }
+            waitKey(0);    
         }
-        waitKey(0); 
-    }   
+    }
+    else{
+        string devicepath = getconifgsingle(fs,"deivce_path");
+        VideoCapture cap(devicepath);
+        Mat frame;
+        if (!cap.isOpened()) {
+        cerr << "ERROR! Unable to open camera\n";
+        return -1;
+        }
+        while(1)
+        {  
+            cap.read(frame);
+            // check if we succeeded
+            if (frame.empty()) {
+            cerr << "ERROR! blank frame grabbed\n";
+            break;
+            }
+            imshow("Live", frame);
+            int value = waitKeyEx(30);
+            switch(value){
+                case 27 : return 0;break;
+                case 32 : Calibration cali(frame,W_CHECKBOX,H_CHECKBOX);
+                          cali.RunCalibrationFrame();
+                          break;
+            }
+        }
+    }
     return 0;
 }
