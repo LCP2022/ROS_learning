@@ -75,6 +75,7 @@ int main(int argc , char** argv){
     vector<string> Imgpathlist;
     FileStorage fs;
     bool status = LoadFile("/home/user/Desktop/CaliCam/src/piccali/config/InputSetting.xml",fs);
+    status=0;
     if(status){
         getconifgseq(fs,"images",Imgpathlist);
         for(int i =0; i < Imgpathlist.size();i++){
