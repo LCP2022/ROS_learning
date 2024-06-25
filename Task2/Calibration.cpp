@@ -43,6 +43,7 @@ class Calibration
         cv::Mat getRotation();
         cv::Mat getTranslation();
         cv::Size getFramesize();
+        double getrms();
         cv::Mat UndistoredImage(cv::Mat in_image);
 };
 Calibration::Calibration(std::string filepathname,int CBWidth,int CBHeight)
@@ -96,9 +97,9 @@ void Calibration::FindDrawChessboardCorners(cv::Mat imgframe){
             PrintIntrinsicParam();
             PrintExtrinsicParam();
 
-            cv::Mat undistimg = UndistoredImage(imgframe);
-            //cv::imshow("undistoredimage",undistimg);
-            pose_estimation(imgframe);
+            // cv::Mat undistimg = UndistoredImage(imgframe);
+            // //cv::imshow("undistoredimage",undistimg);
+            // pose_estimation(imgframe);
         }
 }
 cv::Mat Calibration::RealRotation(cv::Mat R){
@@ -173,3 +174,6 @@ cv::Size Calibration::getFramesize(){
     return Framesize;
 }
 
+double Calibration::getrms(){
+    return rms;
+}

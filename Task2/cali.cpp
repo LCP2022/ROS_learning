@@ -35,22 +35,28 @@ bool LoadFile(string filepath_name ,FileStorage &outfs){
     }
     return true;
 }
-bool SaveFile(string filepath_name,string imgpathname,Calibration cali)
+bool SaveFile(string filepath_name,string imgpathname,Calibration cali,int index)
 {
     FileStorage fs;
-    fs.open(filepath_name, FileStorage::APPEND |FileStorage::FORMAT_YAML);
+    fs.open(filepath_name, FileStorage::READ); // check file exist
     if (!fs.isOpened()){
         cerr << "Failed to open " << filepath_name << endl;
-        return false;
+        fs.release();
+        fs.open(filepath_name, FileStorage::WRITE|CV_STORAGE_FORMAT_YAML); // check file exist
     }
+    fs.release();
+    fs.open(filepath_name, FileStorage::APPEND|CV_STORAGE_FORMAT_YAML); // check file exist
+    fs<<"Image_"+to_string(index)<<"{";
     fs<<"Imagepath"<<imgpathname;
     fs<<"Image Width"<<cali.getFramesize().width;
     fs<<"Image Height"<<cali.getFramesize().height;
+    fs<<"rms"<<cali.getrms();
         fs<<"Intrinsic-Camera-Parameter"<<"{";
         fs<<"Focal x"<<cali.getCameraMatrix().at<double>(0,0);
         fs<<"Focal y"<<cali.getCameraMatrix().at<double>(1,1);
         fs<<"px cx "<<cali.getCameraMatrix().at<double>(0,2);
         fs<<"py cy"<<cali.getCameraMatrix().at<double>(1,2);
+        fs<<"cameraMatrix"<<cali.getCameraMatrix();
         fs<<"}";
         fs<<"Distortion coefficients"<<"{";
         fs<< "k1" << cali.getDistCoeffs().at<double>(0,0);
@@ -58,10 +64,12 @@ bool SaveFile(string filepath_name,string imgpathname,Calibration cali)
         fs<< "p1" << cali.getDistCoeffs().at<double>(0,2);
         fs<< "p2" << cali.getDistCoeffs().at<double>(0,3);
         fs<< "k3" << cali.getDistCoeffs().at<double>(0,4);
+        fs<<"distCoeffs"<<cali.getDistCoeffs();
         fs<<"}";
-    fs<<"Extrinsic-Camera-Parameter"<<"{";// 9x9 matrix
-    fs<<"Translation"<<cali.getTranslation();
-    fs<<"Rotation"<<cali.RealRotation(cali.getRotation());
+        fs<<"Extrinsic-Camera-Parameter"<<"{";// 9x9 matrix
+        fs<<"Translation"<<cali.getTranslation();
+        fs<<"Rotation"<<cali.RealRotation(cali.getRotation());
+        fs<<"}";
     fs<<"}";
     fs.release();
     return true;
@@ -69,23 +77,23 @@ bool SaveFile(string filepath_name,string imgpathname,Calibration cali)
 
 
 
-    
+
 int main(int argc , char** argv){
 
     vector<string> Imgpathlist;
     FileStorage fs;
     bool status = LoadFile("/home/user/Desktop/CaliCam/src/piccali/config/InputSetting.xml",fs);
-    status=0;
+    //status=0;
     if(status){
         getconifgseq(fs,"images",Imgpathlist);
         for(int i =0; i < Imgpathlist.size();i++){
             /*---------------Display Images------------------------*/
             Calibration cali(Imgpathlist[i],W_CHECKBOX,H_CHECKBOX);
             cali.RunCalibration();
-            // bool status = SaveFile("/home/user/Desktop/CaliCam/src/piccali/config/Output.yaml",Imgpathlist[i],cali);
-            // if (status == false){
-            //     return 1;
-            // }
+            bool status = SaveFile("/home/user/Desktop/CaliCam/src/piccali/config/Output.yaml",Imgpathlist[i],cali,i);
+            if (status == false){
+                return 1;
+            }
             waitKey(0);    
         }
     }
