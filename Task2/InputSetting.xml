@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <opencv_storage>
 <images>
-/home/user/Desktop/CaliCam/src/piccali/img/Fisheye_image1.jpeg
 /home/user/Desktop/CaliCam/src/piccali/img/image_1.png
 /home/user/Desktop/CaliCam/src/piccali/img/image_2.png
 /home/user/Desktop/CaliCam/src/piccali/img/image_3.png
@@ -16,4 +15,8 @@
 <deivce_path>
 /dev/video0
 </deivce_path>
+
+<CHECKBOARD_WIDTH>6</CHECKBOARD_WIDTH>
+<CHECKBOARD_HEIGHT>8</CHECKBOARD_HEIGHT>
+
 </opencv_storage>
