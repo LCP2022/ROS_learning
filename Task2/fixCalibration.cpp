@@ -26,7 +26,7 @@ bool LoadConfigFile(string filepath_name ,FileStorage &outfs){
     }
     return true;
 }
-bool SaveFile(string filepath_name,vector<string> &inImgpathlist,Mat inframe,Mat incameraMatrix,Mat indistCoeffs,Mat inRotation,Mat inTranslation,double inrms)
+bool SaveFile(string filepath_name,vector<string> &inImgpathlist,Mat inframe,Mat incameraMatrix,Mat indistCoeffs,vector<Mat> &inRotation,vector<Mat> &inTranslation,double inrms)
 {
     FileStorage fs;
     fs.open(filepath_name, FileStorage::WRITE|CV_STORAGE_FORMAT_YAML); // check file exist
@@ -65,7 +65,8 @@ bool SaveFile(string filepath_name,vector<string> &inImgpathlist,Mat inframe,Mat
 int main(int argc , char** argv){
     vector<vector<Point3f>> objpoints; // Store 3D points
     vector<vector<Point2f>> imgpoints; // Store 2D points
-    Mat frame,cameraMatrix,distCoeffs,Rotation,Translation;
+    Mat frame,cameraMatrix,distCoeffs;
+    vector<Mat> Rotation,Translation;
     vector<string> Imgpathlist;
     FileStorage fs;
     bool status = LoadConfigFile("/home/user/Desktop/CaliCam/src/piccali/config/InputSetting.xml",fs);
@@ -84,7 +85,15 @@ int main(int argc , char** argv){
         }
     double rms=cv::calibrateCamera(objpoints, imgpoints,Size(frame.rows,frame.cols), cameraMatrix, distCoeffs, Rotation, Translation);
     cout<< rms<<endl;
-    SaveFile("/home/user/Desktop/CaliCam/src/piccali/config/Output.yaml",Imgpathlist,frame,cameraMatrix,distCoeffs,Rotation,Translation,rms);
+    SaveFile("/home/user/Desktop/CaliCam/src/piccali/config/Output.yaml",
+                Imgpathlist,
+                frame,
+                cameraMatrix,
+                distCoeffs,
+                Rotation,
+                Translation,
+                rms
+                );
     }
     return 0;
 }
