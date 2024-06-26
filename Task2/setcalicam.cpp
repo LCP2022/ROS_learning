@@ -1,140 +1,137 @@
 #include <iostream>
-#include <opencv2/highgui.hpp>
-#include <opencv2/core.hpp>
-#include <opencv2/calib3d.hpp>
-#include "opencv2/imgproc.hpp"
-#include <opencv2/core/persistence.hpp>
-
-
 #include <string>
-#include <vector>
+#include <opencv2/core.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/core/persistence.hpp>
+#include "frameparam.cpp"
 using namespace cv;
 using namespace std;
-
-struct CameraCablparam{
-    string Imagepath;
-    int width,height;
-    double fx,fy,cx,cy,k1,k2,p1,p2,k3,rms;
-    Mat cameraMatrix,distCoeffs;
-    vector<Mat> R,T;
-    vector<vector<Point2f>> imgpoints; // Store 2D points
-};
-cv::Scalar BLUE = cv::Scalar(255,0,0);
-cv::Scalar GREEN = cv::Scalar(0,255,0);
-cv::Scalar RED = cv::Scalar(0,0,255);
-cv::Scalar YELLOW = cv::Scalar(0,255,255);
-
-
-bool LoadFile(string filepath_name ,FileStorage &outfs){
-    outfs.open(filepath_name, FileStorage::READ|CV_STORAGE_FORMAT_YAML);
+bool getconifgseq(FileStorage fs,string name,vector<string> &listvar){
+    // look for <image></images> with multi string
+    FileNode fn = fs[name]; 
+    if (fn.type() != FileNode::SEQ){
+        cerr << "strings is not a sequence! FAIL" << endl;
+        return false;
+    }
+    FileNodeIterator it = fn.begin(), it_end = fn.end(); // Go through the node
+    for (; it != it_end; ++it){
+        listvar.push_back((string)*it);
+    }
+}
+bool LoadConfigFile(string filepath_name ,FileStorage &outfs){
+    outfs.open(filepath_name, FileStorage::READ);
     if (!outfs.isOpened()){
         cerr << "Failed to open " << filepath_name << endl;
         return false;
     }
     return true;
 }
-CameraCablparam LoadCalibrateSetting(FileStorage fs){
-    CameraCablparam ccparam ;
-    FileNode root = fs["Overall"];
-    root["Imagepath"] >> ccparam.Imagepath ;
-    root["Image Width"] >> ccparam.width ;
-    root["Image Height"] >> ccparam.height ;
-    root["rms"] >> ccparam.rms;
-
-    root["Intrinsic-Camera-Parameter"]["Focal x"]>>ccparam.fx;
-    root["Intrinsic-Camera-Parameter"]["Focal y"]>>ccparam.fy;
-    root["Intrinsic-Camera-Parameter"]["px cx"]>>ccparam.cx;
-    root["Intrinsic-Camera-Parameter"]["py cy"]>>ccparam.cy;
-    root["Intrinsic-Camera-Parameter"]["cameraMatrix"]>>ccparam.cameraMatrix;
-
-    root["Distortion coefficients"]["k1"]>>ccparam.k1;
-    root["Distortion coefficients"]["k2"]>>ccparam.k2;
-    root["Distortion coefficients"]["p1"]>>ccparam.p1;
-    root["Distortion coefficients"]["p2"]>>ccparam.p2;
-    root["Distortion coefficients"]["k3"]>>ccparam.k3;
-    root["Distortion coefficients"]["distCoeffs"]>>ccparam.distCoeffs;
-    root["Extrinsic-Camera-Parameter"]["Translation"]>>ccparam.T;
-    root["Extrinsic-Camera-Parameter"]["Rotation"]>>ccparam.R;
-    //root["Image_points"]>>ccparam.imgpoints;
-    return ccparam;
-}
-
-void pose_estimation(Mat in_image,CameraCablparam cali,vector<Point2f> incorner_pts,  vector<Point3f> inobjp)
-{   
-    float boxwidth = 1;
-    std::vector<cv::Point3f> cubePoints = {
-        {0, 0, 0}, {0, boxwidth, 0}, {boxwidth, boxwidth, 0}, {boxwidth, 0, 0},
-        {0, 0, -boxwidth}, {0, boxwidth, -boxwidth}, {boxwidth, boxwidth, -boxwidth}, {boxwidth, 0, -boxwidth}
-    };
-    
-    std::vector<cv::Point2f> imgptsss;
-    Mat Rot = cv::Mat::zeros(1, 3, CV_32F);
-    Mat Tran = cv::Mat::zeros(1, 3, CV_32F);
-    bool ok =cv::solvePnP(inobjp,incorner_pts,cali.cameraMatrix,cali.distCoeffs,Rot,Tran,false,SOLVEPNP_ITERATIVE);
-    cv::projectPoints(cubePoints,Rot,Tran,cali.cameraMatrix,cali.distCoeffs,imgptsss);
-    Mat dummyimage;
-    in_image.copyTo(dummyimage);
-   // Draw cube edges
-    cv::polylines(dummyimage, vector<vector<Point>>{{imgptsss[0], imgptsss[1], imgptsss[2], imgptsss[3]}}, true,GREEN, 2); // front face
-    cv::polylines(dummyimage, vector<vector<Point>>{{imgptsss[4], imgptsss[5], imgptsss[6], imgptsss[7]}}, true, BLUE, 2); // back face
-    for (int i = 0; i < 4; ++i) {
-        cv::line(dummyimage, imgptsss[i], imgptsss[i + 4], RED, 2); // connecting lines
-    }
-  
-   // cv::line(in_image,YELLOW,4);
-    cv::imshow("pose estimation",dummyimage);
-}
-
-int main(int argc , char** argv){
+bool SaveFile(string filepath_name,vector<string> &inImgpathlist,Mat inframe,Mat incameraMatrix,Mat indistCoeffs,vector<Mat> &inRotation,vector<Mat> &inTranslation,double inrms)
+{
     FileStorage fs;
-    bool Outstatus = LoadFile("/home/user/Desktop/CaliCam/src/piccali/config/Output.yaml",fs);
-    CameraCablparam listparam;
-    listparam = LoadCalibrateSetting(fs);
-    // fs.release();
-
-    bool Inputstatus = LoadFile("/home/user/Desktop/CaliCam/src/piccali/config/InputSetting.xml",fs);
-    string devicepath;
-    int Chessboard_Height,Chessboard_Width;
-    fs["CHECKBOARD_WIDTH"]>>Chessboard_Width;
-    fs["CHECKBOARD_HEIGHT"]>>Chessboard_Height;
-    fs["deivce_path"] >> devicepath;
-
-    vector<Point3f> objp; // Defining the world coordinates for 3D points
-    for(int i{0}; i<Chessboard_Height; i++){
-        for(int j{0}; j<Chessboard_Width; j++)
-        objp.push_back(cv::Point3f(j,i,0));
+    fs.open(filepath_name, FileStorage::WRITE|CV_STORAGE_FORMAT_YAML); // check file exist
+    if (!fs.isOpened()){
+        cerr << "Failed to open " << filepath_name << endl;
+        fs.release();
     }
-    VideoCapture cap(0);
-    if (!cap.isOpened()) {
-    cerr << "ERROR! Unable to open camera\n";
-    return -1;
+    fs<<"Overall"<<"{";
+    fs<<"Imagepath"<<inImgpathlist;
+    fs<<"Image Width"<<inframe.size().width;
+    fs<<"Image Height"<<inframe.size().height;
+    fs<<"rms"<<inrms;
+        fs<<"Intrinsic-Camera-Parameter"<<"{";
+        fs<<"Focal x"<<incameraMatrix.at<double>(0,0);
+        fs<<"Focal y"<<incameraMatrix.at<double>(1,1);
+        fs<<"px cx "<<incameraMatrix.at<double>(0,2);
+        fs<<"py cy"<<incameraMatrix.at<double>(1,2);
+        fs<<"cameraMatrix"<<incameraMatrix;
+        fs<<"}";
+        fs<<"Distortion coefficients"<<"{";
+        fs<< "k1" << indistCoeffs.at<double>(0,0);
+        fs<< "k2" << indistCoeffs.at<double>(0,1);
+        fs<< "p1" << indistCoeffs.at<double>(0,2);
+        fs<< "p2" << indistCoeffs.at<double>(0,3);
+        fs<< "k3" << indistCoeffs.at<double>(0,4);
+        fs<<"distCoeffs"<<indistCoeffs;
+        fs<<"}";
+        fs<<"Extrinsic-Camera-Parameter"<<"{";// 9x9 matrix
+        fs<<"Translation"<<inTranslation;
+        fs<<"Rotation"<<inRotation;
+        fs<<"}";
+    fs<<"}";
+    fs.release();
+    return true;
+}
+int main(int argc , char** argv){
+    vector<vector<Point3f>> objpoints; // Store 3D points
+    vector<vector<Point2f>> imgpoints; // Store 2D points
+    Mat frame,cameraMatrix,distCoeffs;
+    vector<Mat> Rotation,Translation;
+    vector<string> Imgpathlist;
+    FileStorage fs;
+    bool status = LoadConfigFile("/home/user/Desktop/CaliCam/src/piccali/config/InputSetting.xml",fs);
+    status=0;
+    if(status){
+        getconifgseq(fs,"images",Imgpathlist);
+        for(int i =0; i < Imgpathlist.size();i++){
+            CBImagesParam img(Imgpathlist[i],fs["CHECKBOARD_WIDTH"],fs["CHECKBOARD_HEIGHT"]);
+            img.RunCalibration();
+            if(img.getFound()){
+                objpoints.push_back(img.getobjp());
+                imgpoints.push_back(img.getcorner_pts());
+                frame = img.getImageFrame();
+            }
+            waitKey(0);
+        }
     }
-    Mat Frame,gray;
-    while(1){
-        cap.read(Frame);
-        if (Frame.empty()) {
-        cerr << "ERROR! blank frame grabbed\n";
-        break;
-        }
-        cvtColor(Frame,gray,cv::COLOR_BGR2GRAY);
-        std::vector<cv::Point2f> corner_pts; // Store  pixel coordinates of detected checker board corners 
-        bool Found = cv::findChessboardCorners(gray, cv::Size(Chessboard_Width,Chessboard_Height), corner_pts, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FAST_CHECK | CV_CALIB_CB_NORMALIZE_IMAGE);
-        if(Found){
-            
-            cv::TermCriteria criteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 30, 0.001);
-            // refining pixel coordinates for given 2d points.
-            cv::cornerSubPix(gray,corner_pts,cv::Size(11,11), cv::Size(-1,-1),criteria);
-            pose_estimation(Frame,listparam,corner_pts,objp);
-        }
-        imshow("LiveView",Frame);
-        int value = waitKeyEx(30);
-        switch(value){
-            case 27 : return 0;break;
+    else{
+        string devicepath;
+        fs["deivce_path"] >> devicepath;
+        VideoCapture cap(devicepath);
+        for(int i =0;i<10;){
+            cap.read(frame);
+            if (frame.empty()) {
+            cerr << "ERROR! blank frame grabbed\n";
+            return 0;
+            }
+            int value = waitKeyEx(30);
+            switch(value){
+                case 27 : return 0;break;
+                case 32 : { 
+                            CBImagesParam img(frame,fs["CHECKBOARD_WIDTH"],fs["CHECKBOARD_HEIGHT"]);
+                            img.RunCalibrationFrame();
+                            if(img.getFound()){
+                                 i++;
+                                objpoints.push_back(img.getobjp());
+                                imgpoints.push_back(img.getcorner_pts());
+                                frame = img.getImageFrame();
+                            }
+                            break;
+                } 
+            }  
+            cv::putText(frame, //target image
+                        (to_string(i)+":10"), //text
+                        cv::Point(10, frame.rows / 2), //top-left position
+                        cv::FONT_HERSHEY_DUPLEX,
+                        1.0,
+                        CV_RGB(255, 255,0), //font color
+                        2);
+            imshow("live",frame);     
         }
     }
-    
-
-    
+        
+    double rms=cv::calibrateCamera(objpoints, imgpoints,Size(frame.rows,frame.cols), cameraMatrix, distCoeffs, Rotation, Translation);
+    cout<< rms<<endl;
+    if(status){
+        SaveFile("/home/user/Desktop/CaliCam/src/piccali/config/Output.yaml",
+                    Imgpathlist,
+                    frame,
+                    cameraMatrix,
+                    distCoeffs,
+                    Rotation,
+                    Translation,
+                    rms
+                    );
+    }
     return 0;
 }
-
